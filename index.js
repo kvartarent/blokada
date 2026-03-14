@@ -11,7 +11,17 @@ app.use(cors({ origin: '*', methods: '*', allowedHeaders: '*' }));
 app.use(bodyParser.text({ type: '*/*' }));
 app.use(express.static(path.join(__dirname, 'public')));
 
-const store = { events: {}, contacts: {} };
+const store = { 
+  events: {
+    'test-event': {
+      uid: 'test-event',
+      date: '2026-03-15',
+      time: '120000',
+      title: 'Тестовое событие от TaskFlow'
+    }
+  }, 
+  contacts: {} 
+};
 
 app.get('/api/events', (req, res) => res.json(Object.values(store.events)));
 
@@ -35,7 +45,17 @@ app.get('/api/contacts', (req, res) => res.json(Object.values(store.contacts)));
 
 // CalDAV
 app.options('/caldav/*', (req, res) => {
-  res.set({ 'DAV': '1, 2, calendar-access', 'Allow': 'OPTIONS, GET, PUT, DELETE, PROPFIND, REPORT' }).status(200).end();
+  res.set({ 
+    'DAV': '1, 2, 3, calendar-access, addressbook, extended-mkcol', 
+    'Allow': 'OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE, MKCOL, PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL'
+  }).status(200).end();
+});
+
+app.options('/caldav/calendar/*', (req, res) => {
+  res.set({ 
+    'DAV': '1, 2, 3, calendar-access, addressbook, extended-mkcol', 
+    'Allow': 'OPTIONS, GET, HEAD, POST, PUT, DELETE, TRACE, COPY, MOVE, MKCOL, PROPFIND, PROPPATCH, LOCK, UNLOCK, REPORT, ACL'
+  }).status(200).end();
 });
 
 app.all('/caldav/calendar/', (req, res) => {
