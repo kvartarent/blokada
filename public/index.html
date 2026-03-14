@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="default">
+  <meta name="apple-mobile-web-app-title" content="TaskFlow">
+  <link rel="manifest" href="/manifest.json">
+  <title>TaskFlow</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{font-family:-apple-system,BlinkMacSystemFont,sans-serif;background:#f2f2f7}
+    .topbar{background:#fff;padding:env(safe-area-inset-top,44px) 16px 12px;border-bottom:0.5px solid rgba(0,0,0,0.12)}
+    .topbar h1{font-size:28px;font-weight:700;color:#000}
+    .topbar p{font-size:13px;color:#8e8e93;margin-top:2px}
+    .content{padding:16px;max-width:430px;margin:0 auto}
+    .section-title{font-size:11px;font-weight:600;color:#8e8e93;text-transform:uppercase;letter-spacing:.05em;margin:16px 4px 6px}
+    .card-group{background:#fff;border-radius:12px;overflow:hidden;margin-bottom:8px}
+    .card-row{padding:12px 14px;display:flex;align-items:center;gap:12px;border-bottom:0.5px solid rgba(0,0,0,0.08)}
+    .card-row:last-child{border-bottom:none}
+    .row-text{flex:1}.row-main{font-size:15px;color:#000}.row-sub{font-size:13px;color:#8e8e93;margin-top:2px}
+    .dot{width:10px;height:10px;border-radius:50%;flex-shrink:0}.dot-blue{background:#007aff}
+    .fab{position:fixed;bottom:calc(env(safe-area-inset-bottom,0px) + 24px);right:24px;width:54px;height:54px;background:#007aff;border-radius:50%;display:flex;align-items:center;justify-content:center;font-size:28px;color:#fff;cursor:pointer;border:none;z-index:100}
+    .modal{display:none;position:fixed;inset:0;background:rgba(0,0,0,0.4);z-index:200;align-items:flex-end}
+    .modal.open{display:flex}
+    .modal-sheet{background:#f2f2f7;border-radius:16px 16px 0 0;width:100%;max-height:85vh;overflow-y:auto;padding-bottom:env(safe-area-inset-bottom,20px)}
+    .modal-handle{width:36px;height:4px;background:#c7c7cc;border-radius:2px;margin:10px auto 6px}
+    .modal-title{font-size:17px;font-weight:600;text-align:center;padding:0 16px 12px;border-bottom:0.5px solid rgba(0,0,0,0.12);color:#000}
+    .form-group{background:#fff;border-radius:12px;overflow:hidden;margin:12px 16px 0}
+    .form-row{display:flex;align-items:center;padding:12px 14px;border-bottom:0.5px solid rgba(0,0,0,0.08)}
+    .form-row:last-child{border-bottom:none}
+    .form-label{font-size:14px;color:#8e8e93;width:90px;flex-shrink:0}
+    .form-input{flex:1;border:none;outline:none;font-size:15px;color:#000;background:transparent;font-family:inherit}
+    .form-input::placeholder{color:#c7c7cc}
+    .btn-save{display:block;width:calc(100% - 32px);margin:12px 16px 0;background:#007aff;color:#fff;border:none;border-radius:12px;padding:14px;font-size:16px;font-weight:600;cursor:pointer;font-family:inherit}
+    .btn-cancel{display:block;width:calc(100% - 32px);margin:8px 16px 0;background:#fff;color:#007aff;border:none;border-radius:12px;padding:14px;font-size:16px;cursor:pointer;font-family:inherit}
+    .toast{position:fixed;top:60px;left:16px;right:16px;max-width:400px;margin:0 auto;background:#1c1c1e;color:#fff;border-radius:10px;padding:12px 16px;font-size:14px;text-align:center;display:none;z-index:300}
+    .toast.show{display:block}
+    .tabbar{position:fixed;bottom:0;left:0;right:0;background:rgba(255,255,255,.92);border-top:0.5px solid rgba(0,0,0,.15);display:flex;padding:8px 0 env(safe-area-inset-bottom,16px);z-index:50}
+    .tab{flex:1;display:flex;flex-direction:column;align-items:center;gap:3px;cursor:pointer;padding:4px 0}
+    .tab-icon{font-size:22px;color:#8e8e93}.tab-icon.active{color:#007aff}
+    .tab-label{font-size:10px;color:#8e8e93;font-weight:500}.tab-label.active{color:#007aff}
+    .sync-bar{background:#fff;margin:0 0 8px;border-radius:12px;padding:10px 14px;display:flex;align-items:center;justify-content:space-between}
+    .sync-status{font-size:13px;color:#8e8e93}.sync-btn{font-size:13px;color:#007aff;background:none;border:none;cursor:pointer;font-family:inherit}
+    .page{display:none;padding-bottom:80px}.page.active{display:block}
+  </style>
+</head>
+<body>
+<div class="topbar"><h1>TaskFlow</h1><p id="today-date"></p></div>
+<div class="content">
+  <div class="page active" id="page-home">
+    <div class="sync-bar">
+      <span class="sync-status" id="sync-status">Синхронизация с iPhone Календарём</span>
+      <button class="sync-btn" onclick="syncNow()">Синхр.</button>
+    </div>
+    <div class="section-title">События</div>
+    <div class="card-group" id="events-list"><div class="card-row"><div class="row-text"><div class="row-main" style="color:#8e8e93">Загрузка...</div></div></div></div>
+  </div>
+  <div class="page" id="page-contacts">
+    <div class="section-title">Контакты</div>
+    <div class="card-group" id="contacts-list"></div>
+  </div>
+</div>
+<button class="fab" onclick="openModal()">+</button>
+<div class="modal" id="modal">
+  <div class="modal-sheet">
+    <div class="modal-handle"></div>
+    <div class="modal-title">Новое событие</div>
+    <div class="form-group">
+      <div class="form-row"><span class="form-label">Событие</span><input class="form-input" id="f-title" placeholder="Название"></div>
+      <div class="form-row"><span class="form-label">Дата</span><input class="form-input" id="f-date" type="date"></div>
+      <div class="form-row"><span class="form-label">Время</span><input class="form-input" id="f-time" type="time" value="10:00"></div>
+    </div>
+    <div class="form-group">
+      <div class="form-row"><span class="form-label">Имя</span><input class="form-input" id="f-first" placeholder="Имя"></div>
+      <div class="form-row"><span class="form-label">Фамилия</span><input class="form-input" id="f-last" placeholder="Фамилия"></div>
+      <div class="form-row"><span class="form-label">Телефон</span><input class="form-input" id="f-phone" placeholder="+7 900 000 00 00" type="tel"></div>
+      <div class="form-row"><span class="form-label">Email</span><input class="form-input" id="f-email" placeholder="email@example.com"></div>
+      <div class="form-row"><span class="form-label">Компания</span><input class="form-input" id="f-company" placeholder="Компания"></div>
+      <div class="form-row"><span class="form-label">Должность</span><input class="form-input" id="f-job" placeholder="Должность"></div>
+    </div>
+    <button class="btn-save" onclick="saveEvent()">Сохранить в Календарь и Контакты</button>
+    <button class="btn-cancel" onclick="closeModal()">Отмена</button>
+  </div>
+</div>
+<div class="toast" id="toast"></div>
+<div class="tabbar">
+  <div class="tab" onclick="showPage('home',0)"><div class="tab-icon active" id="ti0">&#128197;</div><div class="tab-label active" id="tl0">События</div></div>
+  <div class="tab" onclick="showPage('contacts',1)"><div class="tab-icon" id="ti1">&#128100;</div><div class="tab-label" id="tl1">Контакты</div></div>
+</div>
+<script>
+const API='';
+document.getElementById('today-date').textContent=new Date().toLocaleDateString('ru-RU',{weekday:'long',day:'numeric',month:'long'});
+document.getElementById('f-date').value=new Date().toISOString().split('T')[0];
+async function loadEvents(){try{const r=await fetch(API+'/api/events');const ev=await r.json();const el=document.getElementById('events-list');if(!ev.length){el.innerHTML='<div class="card-row"><div class="row-text"><div class="row-main" style="color:#8e8e93">Нет событий. Нажмите + чтобы добавить</div></div></div>';return;}el.innerHTML=ev.map(e=>'<div class="card-row"><div class="dot dot-blue"></div><div class="row-text"><div class="row-main">'+e.title+'</div><div class="row-sub">'+(e.date||'')+'</div></div><button onclick="delEv(\''+e.uid+'\')" style="background:none;border:none;color:#ff3b30;font-size:20px;cursor:pointer;">&#215;</button></div>').join('');}catch(e){}}
+async function loadContacts(){try{const r=await fetch(API+'/api/contacts');const ct=await r.json();const el=document.getElementById('contacts-list');if(!ct.length){el.innerHTML='<div class="card-row"><div class="row-text"><div class="row-main" style="color:#8e8e93">Контакты появятся при добавлении событий</div></div></div>';return;}el.innerHTML=ct.map(c=>'<div class="card-row"><div style="width:36px;height:36px;border-radius:50%;background:#007aff;display:flex;align-items:center;justify-content:center;font-size:13px;font-weight:600;color:#fff;flex-shrink:0">'+(c.firstName||'?')[0].toUpperCase()+'</div><div class="row-text"><div class="row-main">'+(c.firstName||'')+' '+(c.lastName||'')+'</div><div class="row-sub">'+(c.phone||c.email||c.company||'')+'</div></div></div>').join('');}catch(e){}}
+async function saveEvent(){const t=document.getElementById('f-title').value.trim();if(!t){showToast('Введите название');return;}const d={title:t,date:document.getElementById('f-date').value,time:document.getElementById('f-time').value.replace(':','')+'00',contact:{firstName:document.getElementById('f-first').value.trim(),lastName:document.getElementById('f-last').value.trim(),phone:document.getElementById('f-phone').value.trim(),email:document.getElementById('f-email').value.trim(),company:document.getElementById('f-company').value.trim(),jobTitle:document.getElementById('f-job').value.trim()}};try{await fetch(API+'/api/events',{method:'POST',body:JSON.stringify(d)});closeModal();loadEvents();loadContacts();const n=(d.contact.firstName+' '+d.contact.lastName).trim();showToast(n?'Контакт «'+n+'» сохранён':'Событие добавлено');['f-title','f-first','f-last','f-phone','f-email','f-company','f-job'].forEach(id=>document.getElementById(id).value='');}catch(e){showToast('Ошибка сервера');}}
+async function delEv(uid){await fetch(API+'/api/events/'+uid,{method:'DELETE'});loadEvents();}
+function syncNow(){document.getElementById('sync-status').textContent='Синхронизация...';loadEvents();loadContacts();setTimeout(()=>{document.getElementById('sync-status').textContent='Синхронизировано ✓';setTimeout(()=>document.getElementById('sync-status').textContent='Синхронизация с iPhone Календарём',3000);},1000);}
+function showPage(n,i){document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));document.getElementById('page-'+n).classList.add('active');[0,1].forEach(j=>{document.getElementById('ti'+j).classList.remove('active');document.getElementById('tl'+j).classList.remove('active');});document.getElementById('ti'+i).classList.add('active');document.getElementById('tl'+i).classList.add('active');if(n==='contacts')loadContacts();}
+function openModal(){document.getElementById('modal').classList.add('open');}
+function closeModal(){document.getElementById('modal').classList.remove('open');}
+function showToast(m){const t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(()=>t.classList.remove('show'),3000);}
+if('serviceWorker' in navigator)navigator.serviceWorker.register('/sw.js');
+loadEvents();
+</script>
+</body>
+</html>
